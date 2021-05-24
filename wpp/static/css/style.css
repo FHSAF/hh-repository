@@ -1,0 +1,28 @@
+body{
+    margin:100px;
+    padding:0;
+}
+
+.content{
+    width: 80%;
+    margin: auto;
+}
+
+.row {
+    padding: 50px 20px;
+}
+
+.mc-width{
+    width: 100%;
+}
+
+.const-height{
+    height: 60vh;
+    border: 1px solid rgba(0, 0, 0, 0.5);
+}
+.active{
+    color:rgba(0, 0, 0, 0.5);
+}
+.page-title{
+    padding: 10px 0;
+}

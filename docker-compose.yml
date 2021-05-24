@@ -1,0 +1,19 @@
+version: '3.8'
+services: 
+    wppdjango:
+        build:
+            context: . 
+            dockerfile: Dockerfile
+        ports: 
+            - 8000:8000
+        volumes: 
+            - .:/app
+        depends_on: 
+            - pgqldb
+    pgqldb:
+        image: postgres
+        restart: always
+        environment:
+            POSTGRES_DB: wppdbms
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: miPass4Sd@123
