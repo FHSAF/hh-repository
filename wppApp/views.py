@@ -1,4 +1,4 @@
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from django.http import request
 from django.contrib import messages
 import requests 
@@ -6,6 +6,10 @@ from urllib.parse import urljoin
 import re
 from bs4 import BeautifulSoup
 import datetime
+# imports for pdf report generation
+from django.http import HttpResponse
+from django.template.loader import get_template
+from xhtml2pdf import pisa
 
 from .models import Site, Page, ExceptedPages
 
@@ -23,23 +27,24 @@ def Index(request):
     }
     return render(request, template_dir, context)
 
-def css_file(soup):
+# In case you want to get css files
+def css_file(page_source):
     # get the CSS files
     css_files = []
 
-    for css in soup.find_all("link"):
+    for css in page_source.find_all("link"):
         if css.attrs.get("href"):
             # if the link tag has the 'href' attribute
             css_url = urljoin(url, css.attrs.get("href"))
             css_files.append(css_url)
     return css_files
 
-
-def script_files(soup):
+# In case you want to get script files
+def script_files(page_source):
     # get the JavaScript files
     script_files = []
 
-    for script in soup.find_all("script"):
+    for script in page_source.find_all("script"):
         if script.attrs.get("src"):
             # if the tag has the attribute 'src'
             script_url = urljoin(url, script.attrs.get("src"))
@@ -149,10 +154,13 @@ def aparser(request):
                     content = site_bs4.prettify(),
                     title = title,
                 )
-                # if css == True:
-                #     page.css = css_files(site_bs4)
-                # if scripts == True:
-                #     page.scripts = script_files(site_bs4)
+                '''
+                # check of the css or script files acquired
+                if css == True:
+                    page.css = css_files(site_bs4)
+                if scripts == True:
+                    page.scripts = script_files(site_bs4)
+                '''
                 page.save()
 
                 amount += 1
@@ -181,3 +189,28 @@ def details(request, pk):
         'pages': pages
     }
     return render(request, template_dir, context)
+
+def ReportAsPdf(request, *args, **kwargs):
+    
+    pk = kwargs.get('pk')
+    page = get_object_or_404(Page, pk=pk)
+
+    template_path = 'reports/page_report.htm'
+    context = {'page': page}
+    # Create a Django response object, and specify content_type as pdf
+    response = HttpResponse(content_type='application/pdf')
+    # if want to download
+    # response['Content-Disposition'] = 'attachment; filename="report.pdf"'
+    # if want to display it in the browser
+    response['Content-Disposition'] = 'filename="{page.title}.pdf"'
+    # find the template and render it.
+    template = get_template(template_path)
+    html = template.render(context)
+
+    # create a pdf
+    pisa_status = pisa.CreatePDF(
+       html, dest=response)
+    # if error then show some funy view
+    if pisa_status.err:
+       return HttpResponse('We had some errors <pre>' + html + '</pre>')
+    return response
